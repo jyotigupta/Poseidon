@@ -41,6 +41,19 @@ import org.apache.http.protocol.HttpContext;
 import org.trpr.platform.core.impl.logging.LogFactory;
 import org.trpr.platform.core.spi.logging.Logger;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.X509TrustManager;
+
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContexts;
+
+import java.security.KeyManagementException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.X509TrustManager;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -115,7 +128,9 @@ public class HttpConnectionPool {
         // create scheme
         SchemeRegistry schemeRegistry = new SchemeRegistry();
         if (this.secure) {
-            schemeRegistry.register(new Scheme("https", port, SSLSocketFactory.getSocketFactory()));
+        	
+        	
+            schemeRegistry.register(new Scheme("https", port,getSSLSocketFactory()));
         } else {
             schemeRegistry.register(new Scheme("http", port, PlainSocketFactory.getSocketFactory()));
         }
@@ -154,6 +169,20 @@ public class HttpConnectionPool {
 
     }
 
+    public SSLSocketFactory getSSLSocketFactory(){
+    	// SSLSocketFactory.getSocketFactory()
+    	
+    	  SSLContext sslcontext =null; 
+          try {
+        	  sslcontext=  SSLContexts.custom().useSSL().build();
+			sslcontext.init(null, new X509TrustManager[]{new HttpsTrustManager()}, new SecureRandom());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+       return new  SSLSocketFactory(sslcontext,
+                  SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+    }
 
     /**
      * Builds a pool from params
@@ -430,4 +459,27 @@ public class HttpConnectionPool {
     public void setResponseGzipEnabled(boolean responseGzipEnabled) {
         this.responseGzipEnabled = responseGzipEnabled;
     }
+}
+
+ class HttpsTrustManager implements X509TrustManager {
+
+	@Override
+	public void checkClientTrusted(X509Certificate[] arg0, String arg1)
+			throws CertificateException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void checkServerTrusted(X509Certificate[] arg0, String arg1)
+			throws CertificateException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public X509Certificate[] getAcceptedIssuers() {
+		return new X509Certificate[]{};
+	}
+
 }
